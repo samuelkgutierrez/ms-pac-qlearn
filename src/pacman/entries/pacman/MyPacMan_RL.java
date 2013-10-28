@@ -43,7 +43,6 @@ public class MyPacMan_RL extends Controller<MOVE> {
     }
 
     /* ////////////////////////////////////////////////////////////////////// */
-    // Construct a new controller with a value table passed in.
     public MyPacMan_RL(int trials, double learning,
                        double discount, double exploration,
                        double[][] tableQ) {
@@ -62,19 +61,16 @@ public class MyPacMan_RL extends Controller<MOVE> {
     }
 
     /* ////////////////////////////////////////////////////////////////////// */
-    // Initialize tableQ from Game object
     public void initializeTableQ(Game game) {
         tableQ = new double[game.getNumberOfNodes()][4];
     }
 
     /* ////////////////////////////////////////////////////////////////////// */
-    // Returns the value table.
     public double[][] getTableQ() {
         return tableQ;
     }
 
     /* ////////////////////////////////////////////////////////////////////// */
-    // Prints the Q Table to the console for debugging convenience.
     public void printTableQ() {
         for (int state = 0; state < tableQ.length; ++state) {
             for (int action = 0; action < 4; ++action) {
@@ -86,7 +82,7 @@ public class MyPacMan_RL extends Controller<MOVE> {
     }
 
     /* ////////////////////////////////////////////////////////////////////// */
-    // Save the Q Table to a text file.
+    // save the q table to a text file.
     public void saveTableQ(String filename) throws IOException {
         BufferedWriter out = new BufferedWriter(new FileWriter(filename));
         for (int state = 0; state < tableQ.length; ++state) {
@@ -101,16 +97,17 @@ public class MyPacMan_RL extends Controller<MOVE> {
     /* ////////////////////////////////////////////////////////////////////// */
     // replaces the current q table with one specified in the read file.
     public void loadTableQ(String filename) throws IOException {
-        int state_count = tableQ.length;
-        int action_count = 4;
-        tableQ = new double[state_count][action_count];
+        String line = null;
+        int stateCount = tableQ.length;
+        int actionCount = 4;
+        tableQ = new double[stateCount][actionCount];
 
         BufferedReader in = new BufferedReader(new FileReader(filename));
-        String line = null;
-        while ((line = in.readLine()) != null) {
+        while (null != (line = in.readLine())) {
             String[] parts = line.split(":");
-            tableQ[Integer.parseInt(parts[0])][MOVE.fromString(parts[1])
-                    .toInt()] = Double.parseDouble(parts[2]);
+            tableQ[Integer.parseInt(parts[0])]
+                  [MOVE.fromString(parts[1]).toInt()] =
+                  Double.parseDouble(parts[2]);
         }
         in.close();
     }
@@ -118,15 +115,15 @@ public class MyPacMan_RL extends Controller<MOVE> {
     /* ////////////////////////////////////////////////////////////////////// */
     // Your code for following the Epsilon-Greedy Q-Learning Policy goes here.
     public MOVE getMove(Game game, long timeDue) {
-        // the current node of Ms PacMan and her possible actions
-        int current_state = game.getPacmanCurrentNodeIndex();
-        MOVE[] possible_moves = game.getPossibleMoves(current_state);
+        int currentState = game.getPacmanCurrentNodeIndex();
+        MOVE[] possibleMoves = game.getPossibleMoves(currentState);
 
         if (game.rnd.nextDouble() <= exploration) {
-            // Random Exploration
-            int move_choice = game.rnd.nextInt(possible_moves.length);
-            myMove = possible_moves[move_choice];
-        } else {
+            // do random exploration
+            int move_choice = game.rnd.nextInt(possibleMoves.length);
+            myMove = possibleMoves[move_choice];
+        }
+        else {
             // Greedy Policy Exploitation
 
             //
