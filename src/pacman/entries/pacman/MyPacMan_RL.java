@@ -13,16 +13,43 @@ import pacman.controllers.Controller;
 import pacman.game.Constants.MOVE;
 import pacman.game.Game;
 
+final class MoveMax {
+    private MOVE move;
+    private double max;
+
+    public MoveMax(MOVE move, double max) {
+        this.move = move;
+        this.max = max;
+    }
+
+    public void max(double max) {
+        this.max = max;
+    }
+
+    public double max() {
+        return this.max;
+    }
+
+    public void move(MOVE move) {
+        this.move = move;
+    }
+
+    public MOVE move() {
+        return this.move;
+    }
+}
+
 public class MyPacMan_RL extends Controller<MOVE> {
+    private static final int NACTIONS = 4;
     // a table used to represent the learned state-action values.
     // the first index is a node index, the second a move.toint()
     private double[][] tableQ;
 
     // number of trials to run
     private int trials;
-    // the learning rate
+    // the learning rate (alpha)
     private double learning; // the learning rate
-    // the discount rate
+    // the discount factor (gamma)
     private double discount; // the discount rate
     // the exploration rate
     private double exploration; // the exploration rate
@@ -73,7 +100,7 @@ public class MyPacMan_RL extends Controller<MOVE> {
     /* ////////////////////////////////////////////////////////////////////// */
     public void printTableQ() {
         for (int state = 0; state < tableQ.length; ++state) {
-            for (int action = 0; action < 4; ++action) {
+            for (int action = 0; action < NACTIONS; ++action) {
                 System.out.print("" + state + ":"
                                  + MOVE.fromInt(action).toString() + ":"
                                  + tableQ[state][action] + "\n");
@@ -86,7 +113,7 @@ public class MyPacMan_RL extends Controller<MOVE> {
     public void saveTableQ(String filename) throws IOException {
         BufferedWriter out = new BufferedWriter(new FileWriter(filename));
         for (int state = 0; state < tableQ.length; ++state) {
-            for (int action = 0; action < 4; ++action) {
+            for (int action = 0; action < NACTIONS; ++action) {
                 out.write("" + state + ":" + MOVE.fromInt(action).toString()
                           + ":" + tableQ[state][action] + "\n");
             }
@@ -99,7 +126,7 @@ public class MyPacMan_RL extends Controller<MOVE> {
     public void loadTableQ(String filename) throws IOException {
         String line = null;
         int stateCount = tableQ.length;
-        int actionCount = 4;
+        int actionCount = NACTIONS;
         tableQ = new double[stateCount][actionCount];
 
         BufferedReader in = new BufferedReader(new FileReader(filename));
@@ -113,32 +140,58 @@ public class MyPacMan_RL extends Controller<MOVE> {
     }
 
     /* ////////////////////////////////////////////////////////////////////// */
-    // Your code for following the Epsilon-Greedy Q-Learning Policy goes here.
     public MOVE getMove(Game game, long timeDue) {
         int currentState = game.getPacmanCurrentNodeIndex();
         MOVE[] possibleMoves = game.getPossibleMoves(currentState);
 
         if (game.rnd.nextDouble() <= exploration) {
             // do random exploration
-            int move_choice = game.rnd.nextInt(possibleMoves.length);
-            myMove = possibleMoves[move_choice];
+            int moveChoice = game.rnd.nextInt(possibleMoves.length);
+            myMove = possibleMoves[moveChoice];
         }
         else {
-            // Greedy Policy Exploitation
-
-            //
-            // Implement Arg-Max Action Selection Here
-            //
+            // greedy policy exploitation - arg-max selection
+            myMove = getMMFromState(currentState, possibleMoves).move();
         }
         return myMove;
     }
 
     /* ////////////////////////////////////////////////////////////////////// */
-    // Q-Learning back-propagation here.
-    public void performLearning(Game game, int previous_state,
-            MOVE previous_move, double reward) {
-        //
-        // Implement Q-Learning Back-Propagation here
-        //
+    private MoveMax getMMFromState(int currentState, MOVE[] possibleMoves) {
+        double max = 0.0;
+        boolean first = true;
+        MOVE myMove = MOVE.NEUTRAL;
+
+        for (int i = 0; i < possibleMoves.length; ++i) {
+            int movei = possibleMoves[i].toInt();
+            if (first) {
+                max = this.tableQ[currentState][movei];
+                first = false;
+                myMove = possibleMoves[i];
+            }
+            else {
+                double cVal = this.tableQ[currentState][movei];
+                if (cVal > max) {
+                    max = cVal;
+                    myMove = possibleMoves[i];
+                }
+            }
+        }
+        return new MoveMax(myMove, max);
+    }
+
+    /* ////////////////////////////////////////////////////////////////////// */
+    public void performLearning(Game game, int previousState,
+                                MOVE previousMove, double reward) {
+        // table: [Node ID][U][R][D][L]
+        //        [Node ID][U][R][D][L]
+        //        ...
+        int currentState = game.getPacmanCurrentNodeIndex();
+        MOVE[] possibleMoves = game.getPossibleMoves(currentState);
+        double maxQsp = getMMFromState(currentState, possibleMoves).max();
+        double qsa = tableQ[previousState][previousMove.toInt()];
+        tableQ[previousState][previousMove.toInt()] =
+                ((1.0 - learning) * qsa) +
+                (learning * (reward + (discount * maxQsp)));
     }
 }
