@@ -187,9 +187,13 @@ public class MyPacMan_RL extends Controller<MOVE> {
         //        [Node ID][U][R][D][L]
         //        ...
         int currentState = game.getPacmanCurrentNodeIndex();
+        // array of possible moves given my current position
         MOVE[] possibleMoves = game.getPossibleMoves(currentState);
+        // max Q(s', a)
         double maxQsp = getMMFromState(currentState, possibleMoves).max();
+        // Q(s, a)
         double qsa = tableQ[previousState][previousMove.toInt()];
+        // table update
         tableQ[previousState][previousMove.toInt()] =
                 ((1.0 - learning) * qsa) +
                 (learning * (reward + (discount * maxQsp)));
